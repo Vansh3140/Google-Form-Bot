@@ -1,74 +1,213 @@
-# Google Form Auto-Filler Script
+# Google-Form Filler
 
-This Python script uses **Selenium** to automatically fill out a Google Form and take a screenshot of the filled-out form. It is designed to work with Chrome and requires the **Chrome WebDriver** to run.
+This project automates the submission of a Google Form using Selenium and provides a Flask-based interface to send an email with relevant attachments. Below is a detailed breakdown of the files and their functionalities.
 
-## Requirements
+---
 
-- Python 3.x
-- Selenium library
-- Chrome browser and ChromeDriver
-- `time` module (included in Python standard library)
+## Files Overview
 
-### Installation
+### 1. `index.html`
+#### **Purpose**:
+A simple HTML page that serves as the user interface to trigger the email-sending functionality.
 
-1. **Install Python 3.x**: Ensure that you have Python 3.x installed. You can download it from [python.org](https://www.python.org/downloads/).
+#### **Features**:
+- Contains a single form with a button to submit the request to the Flask app.
+- Minimalistic design with no additional user inputs.
 
-2. **Install Selenium**:
-   Use pip to install Selenium by running:
+#### **Code Breakdown**:
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Submission</title>
+</head>
+<body>
+    <h1>Submit Your Assignment</h1>
+    <form action="/send_email" method="POST">
+        <button type="submit">Send Email</button>
+    </form>
+</body>
+</html>
+```
+
+#### **How It Works**:
+- When the button is clicked, a POST request is sent to the `/send_email` endpoint in the Flask app.
+- The email-sending logic is handled entirely by the backend.
+
+---
+
+### 2. `send_email.py`
+#### **Purpose**:
+A Python script that uses Flask and the SMTP library to send an email with attachments.
+
+#### **Features**:
+- **Flask Integration**:
+  - Hosts a web server with two routes:
+    - `/`: Renders the `index.html` page.
+    - `/send_email`: Sends an email upon form submission.
+- **Email Configuration**:
+  - Sends an email with a subject, body, and attachments.
+  - Includes the sender, recipient, and CC fields.
+- **Attachments**:
+  - Attaches a screenshot (`screenshot.png`) and a resume (`resume.pdf`).
+- **Environment Variable Usage**:
+  - Uses `.env` to securely load the sender's email password.
+
+#### **Key Code Snippet**:
+```python
+@app.route('/send_email', methods=['POST'])
+def send_email():
+    # Email configuration
+    sender_email = "chdvanshsingh@gmail.com"
+    sender_password = os.getenv('password')
+    receiver_email = "tech@themedius.ai"
+    cc_email = "hr@themedius.ai"
+    subject = "Python (Selenium) Assignment - Vansh Singh Chaudhary"
+
+    # Creating the email message
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['CC'] = cc_email
+    msg['To'] = receiver_email
+    msg['Subject'] = subject
+
+    # Email body and attachments are added here
+    ...
+
+    # Sending the email using SMTP
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, receiver_email, msg.as_string())
+
+    return "Email sent successfully!"
+```
+
+#### **How It Works**:
+1. Loads `index.html` for the homepage.
+2. Sends an email when the `/send_email` endpoint is triggered via a POST request.
+3. Attaches required files and sends them via Gmail's SMTP server.
+
+---
+
+### 3. `screenshot.py`
+#### **Purpose**:
+A Python script using Selenium to automate the submission of a Google Form and take a screenshot after successful submission.
+
+#### **Features**:
+- **Automated Google Form Filling**:
+  - Opens a pre-defined Google Form using Chrome WebDriver.
+  - Fills out various fields, including text, date, and textarea fields, with sample data.
+- **Screenshot Capture**:
+  - Takes a screenshot after form submission and saves it as `screenshot.png`.
+
+#### **Key Code Snippet**:
+```python
+# Locating and filling the address field
+address_field = driver.find_element(by=By.XPATH, value="//textarea")
+address_field.send_keys('Village ABC Distt. XYZ ABC state')
+
+# Filling out additional input fields with sample data
+input_list[3].send_keys('111111')
+
+# Locating and setting the date in the date input field
+date_field = driver.find_element(By.XPATH, "//input[@type='date']")
+date_field.send_keys('2024-12-31')
+
+# Locating and clicking the submit button
+submit = driver.find_element(by=By.XPATH, value="//span[text()='Submit']")
+submit.click()
+
+# Taking a screenshot of the page after form submission
+driver.save_screenshot("screenshot.png")
+```
+
+#### **How It Works**:
+1. Opens the Google Form.
+2. Automatically fills the form with pre-defined inputs.
+3. Clicks the submit button and captures a screenshot of the result.
+4. Saves the screenshot as `screenshot.png` for use in the email.
+
+---
+
+### Environment Setup
+
+#### **Prerequisites**:
+- Python 3.x installed.
+- Required Python libraries:
+  - Flask
+  - Selenium
+  - `python-dotenv`
+
+#### **Installation Steps**:
+1. **Clone the Repository**:
    ```bash
-   pip install selenium
+   git clone <repository_url>
+   cd <repository_folder>
    ```
 
-3. **Download ChromeDriver**:
-   - Download the ChromeDriver version that matches your installed Chrome version from [ChromeDriver](https://sites.google.com/chromium.org/driver/).
-   - Ensure that ChromeDriver is placed in a directory included in your system’s `PATH` or provide the path directly in your script.
-
-## Usage
-
-1. Clone or download this repository.
-
-2. Modify the `google_form_url` in the script with the link to the Google Form you want to fill out.
-
-3. Run the script:
-
+2. **Set Up Virtual Environment**:
    ```bash
-   python auto_fill_form.py
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
    ```
 
-The script will:
+3. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-- Open the specified Google Form.
-- Automatically fill out the form with predefined sample data.
-- Click the "Submit" button.
-- Take a screenshot of the form after submission and save it as `screenshot.png`.
+4. **Set Up `.env` File**:
+   - Create a `.env` file in the root directory.
+   - Add your Gmail password:
+     ```
+     password=your_gmail_password
+     ```
 
-## Code Explanation
+5. **Download ChromeDriver**:
+   - Download the ChromeDriver compatible with your Chrome version from [here](https://chromedriver.chromium.org/downloads).
+   - Place it in the project directory or in your system PATH.
 
-1. **Chrome WebDriver Configuration**:  
-   The script uses `webdriver.ChromeOptions()` to configure Chrome to remain open after script execution by setting the `"detach"` option to `True`.
+---
 
-2. **Filling the Google Form**:  
-   The script uses XPath to locate the form's input fields and fills them with predefined values (name, phone number, email, address, etc.).
+### Running the Project
 
-3. **Form Submission**:  
-   After filling out the fields, the script clicks the "Submit" button to submit the form.
+#### **Step 1: Automate Google Form Submission**
+Run the Selenium script to fill out the Google Form and generate a screenshot:
+```bash
+python screenshot.py
+```
+This creates a file named `screenshot.png` in the project directory.
 
-4. **Screenshot Capture**:  
-   After form submission, a screenshot is taken and saved in the current directory as `screenshot.png`.
+#### **Step 2: Start the Flask App**
+Run the Flask app to start the email-sending service:
+```bash
+python send_email.py
+```
+Access the application at `http://127.0.0.1:5000/`.
 
-5. **Error Handling**:  
-   Any errors encountered during execution are caught in a `try-except` block and are printed to the console.
+#### **Step 3: Send the Email**
+- Open the app in your browser.
+- Click the **Send Email** button to trigger the `/send_email` endpoint.
 
-6. **Browser Closure**:  
-   After the process is completed (or in case of an error), the browser is closed with a `quit()` command.
+---
 
-## Notes
+### Outputs
 
-- Ensure that the Google Form is publicly accessible or accessible to the user running the script.
-- Modify the input data in the script as needed for your use case.
-- The script currently assumes that there are exactly six text input fields and one textarea field. If the form structure changes, the XPath queries may need adjustment.
+#### **Generated Outputs**:
+1. `screenshot.png`: Captured after Google Form submission.
 
-## Troubleshooting
+---
 
-- **WebDriver not found**: Ensure that `chromedriver` is correctly installed and its path is included in the system’s `PATH`.
-- **Form not found**: If the XPath does not match the form elements, inspect the form's HTML structure and update the XPath in the script.
+### Future Improvements
+1. **Dynamic Form Inputs**:
+   - Allow user input for form data via the Flask UI.
+2. **Error Handling**:
+   - Add comprehensive error messages for both Selenium and Flask.
+3. **UI Enhancements**:
+   - Use CSS for a better user experience.
+4. **File Management**:
+   - Allow dynamic upload of attachments via the web interface.
+
